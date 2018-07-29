@@ -21,23 +21,23 @@ definition(
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png"
+)
 
+preferences {
+	// simulated switch to control wake on lan and eventghost methods.
+	// if using amazon echo or google home name it after the device you would like
+	// to power on to allow voice control. (ie. Desktop PC, Media PC, Computer, etc.)
+	section("Simulated Switch") {
+		input "theswitch", "capability.switch", required: true, title: "Switch"
+	}
 
-preferences {    
-	// simulated switch to control wake on lan and eventghost methods. 
-    // if using amazon echo or google home name it after the device you would like 
-    // to power on to allow voice control. (ie. Desktop PC, Media PC, Computer, etc.)
-    section("Simulated Switch") {
-    	input "theswitch", "capability.switch", required: true, title: "Switch"
-    }
-    
-    section("Computer Information") {
-    	input "computerIP","text", required:true, title: "Computer IP Address"
-        input "computerPort","number", required: true, title: "Webserver port"
-        input "macaddress", "text", required: true, title: "Computer MAC Address without"
-        input "secureonpassword", "text", required: false, title: "SecureOn Password (Optional)"
-    }
+	section("Computer Information") {
+		input "computerIP","text", required:true, title: "Computer IP Address"
+		input "computerPort","number", required: true, title: "Webserver port"
+		input "macaddress", "text", required: true, title: "Computer MAC Address without"
+		input "secureonpassword", "text", required: false, title: "SecureOn Password (Optional)"
+	}
 }
 
 def installed() {
@@ -54,64 +54,66 @@ def updated() {
 }
 
 def initialize() {
-	//switch.on sends WOL. Switch.off sends eventghost
+	// switch.on sends WOL
+	// switch.off sends Eventghost
 	subscribe(theswitch, "switch.on", theswitchOnHandler)
-    subscribe(theswitch, "switch.off", theswitchOffHandler)
+	subscribe(theswitch, "switch.off", theswitchOffHandler)
 }
 
 def theswitchOnHandler(evt) {
-	//sends myWOL results as hub command
+	// sends myWOL results as hub command
 	log.debug "theswitchOnHandler: Running"
-    sendHubCommand(myWOL())
+	sendHubCommand(myWOL())
 }
 
 def theswitchOffHandler(evt) {
-	//send myEventGhostShutdown as hub command
+	// send myEventGhostShutdown results as hub command
 	log.debug "theswitchOffHandler: Running"
-    sendHubCommand(myEventGhostShutdown())
+	sendHubCommand(myEventGhostShutdown())
 }
 
 def myWOL(evt) {
-	//Determines if there is a secure password used for WOL
-	if(secureonpassword){
-    	//if a secure password exists
-        //creates a new physicalgraph.device.hubaction
-        def result = new physicalgraph.device.HubAction (
-        	"wake on lan $macaddress",
-        	physicalgraph.device.Protocol.LAN,
-        	null,
-        	[secureCode: "$secureonpassword"]
-        )
-        //returns the result
-    	return result
-    } else {
-    	//if no secure password exists
-        //creates a new physicalgraph.device.hubaction
-    	log.debug "myWOL: SecureOn Password False"
-        log.debug "myWOL: MAC Address $macaddress"
-        def result = new physicalgraph.device.HubAction (
-        	"wake on lan $macaddress",
-        	physicalgraph.device.Protocol.LAN,
-        	null
-        )    
-        //returns the result
-        return result
-    }
+	// Determines if there is a secure password used for WOL
+	if (secureonpassword) {
+		// if a secure password exists
+		// creates a new physicalgraph.device.hubaction
+		def result = new physicalgraph.device.HubAction(
+			"wake on lan $macaddress",
+			physicalgraph.device.Protocol.LAN,
+			null,
+			[secureCode: "$secureonpassword"]
+		)
+		// returns the result
+		return result
+	} else {
+		// if no secure password exists
+		// creates a new physicalgraph.device.hubaction
+		log.debug "myWOL: SecureOn Password False"
+		log.debug "myWOL: MAC Address $macaddress"
+		def result = new physicalgraph.device.HubAction(
+			"wake on lan $macaddress",
+			physicalgraph.device.Protocol.LAN,
+			null
+		)
+		// returns the result
+		return result
+	}
 }
 
 def myEventGhostShutdown(evt) {
-	//concatenate computer IP and MAC
-    //set even ghost command
-    //encodes the eventghost command
-	//creates new physical.device.graph from given values
+	// concatenate computer IP and MAC
+	// set even ghost command
+	// encodes the eventghost command
+	// creates new physical.device.graph from given values
 	log.debug "eventghostPowerOff: Running"
 	def egHost = computerIP + ":" + computerPort
 	def egRawCommand = "ST.PCPower.Shutdown"
 	def egRestCommand = java.net.URLEncoder.encode(egRawCommand)
 	def result = new physicalgraph.device.HubAction("""GET /?$egRestCommand HTTP/1.1\r\nHOST: $egHost\r\n\r\n""",
-    	physicalgraph.device.Protocol.LAN
-    )
-    //returns result
-    return result
+		physicalgraph.device.Protocol.LAN
+	)
+	// returns result
+	return result
 }
 // TODO: implement event handlers
+// vim: set ts=4 sts=4 sw=4 noet:
